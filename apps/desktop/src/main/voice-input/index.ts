@@ -36,6 +36,7 @@ import { getMaker } from '../maker-host/index.js';
 import { getEffectiveAuxiliaryModelChainSnapshot } from '../utility-model/resolveAuxiliaryModelChain.js';
 import { getAppCapabilities } from '../appCapabilities.js';
 import { getProviderSecretStore } from '../secrets/providerSecretStore.js';
+import { transcribeCustomAsrAudioFile } from './CustomAsrBatchTranscription.js';
 import { assertTrustedAppRendererEvent } from '../security/trustedAppRenderer.js';
 import { publishMicrophonePermissionSnapshot, registerMicrophonePermissionIpc } from './microphonePermissionIpc.js';
 import {
@@ -219,6 +220,18 @@ export type VoiceInputAudioFileTranscriptionResult = {
   provider: VoiceInputProviderKind;
   model: string;
 };
+
+/**
+ * 手机远程听写能力投影:BYOK + customAsr.batchHttpUrl 就绪时返回给手机端,
+ * 让它决定本次听写走被控端(跟随本机语音设置)还是 Cindy 托管路径。
+ * 纯读取,不发起连接,不进任何 push 帧(见 dictionary:get handler)。
+ */
+export function readMobileVoiceTranscribeHostChain(): { provider: 'custom-batch-asr'; model: string } | undefined {
+  if (!isVoiceInputByokMode()) return undefined;
+  const customAsr = readActiveVoiceInputModelSelection('mobile-transcribe-capability').customAsr;
+  if (!customAsr?.batchHttpUrl) return undefined;
+  return { provider: 'custom-batch-asr', model: customAsr.model };
+}
 
 type ActiveVoiceInput = {
   admission: { cancelled: boolean };
@@ -1925,6 +1938,33 @@ async function createVoiceInputProvider(
 export async function transcribeVoiceInputAudioFile(
   input: VoiceInputAudioFileTranscriptionInput,
 ): Promise<VoiceInputAudioFileTranscriptionResult> {
+  // BYOK 批量轴:被控端配置了 customAsr.batchHttpUrl 时,远程听写跟随本机语音
+  // 输入的 BYOK 选择(与 inline realtime 同一 customAsr 配置/同一把 origin 作用域
+  // key),不经 XD Gateway、不产生托管计费。缺省回落既有 litellm-batch 路径。
+  if (isVoiceInputByokMode()) {
+    const customAsr = readActiveVoiceInputModelSelection('remote-voice-batch').customAsr;
+    if (customAsr?.batchHttpUrl) {
+      const customProfile = getVoiceInputAsrProfile('custom-batch-asr');
+      if (isAsrProfileRouteDisabled(customProfile)) {
+        throw new Error('voice transcription route disabled in settings');
+      }
+      const apiKey = getProviderSecretStore().get('voice-asr') ?? undefined;
+      const text = await transcribeCustomAsrAudioFile({
+        batchHttpUrl: customAsr.batchHttpUrl,
+        model: customAsr.model,
+        apiKey,
+        sourceLanguage: input.sourceLanguage,
+        bytes: input.bytes,
+        mimeType: input.mimeType,
+        fileName: input.fileName,
+      });
+      return {
+        text,
+        provider: 'custom-batch-asr',
+        model: customAsr.model,
+      };
+    }
+  }
   const provider: VoiceInputProviderKind = 'litellm-batch';
   const profile = getVoiceInputAsrProfile(provider);
   // 停用轴(PR #744 review 第二十二/二十五轮):device-link 批量转写与内联 ASR 链

@@ -24,7 +24,10 @@ import { MAX_SHARED_TASK_TOPICS, refreshSharedTaskPeer, releaseSharedTaskWatches
 import { admitSharedTaskFsWatchTopics } from './sharedTaskFileAccess.js';
 import { transcribeRemoteVoiceInput } from './voiceTranscribe';
 import { readTelegramRemoteStatus, setTelegramRemoteOnline } from './telegramRemoteControl';
-import { adviseAndRecordVoiceInputDictionaryLearning } from '../voice-input/index.js';
+import {
+  adviseAndRecordVoiceInputDictionaryLearning,
+  readMobileVoiceTranscribeHostChain,
+} from '../voice-input/index.js';
 import { buildMobileDictionarySnapshot } from '../voice-input/dictionarySyncDriver.js';
 import {
   setBroadcastTapListener,
@@ -153,6 +156,7 @@ export const {
   releaseSharedTaskWatchesOnWorkdirChange,
   admitSharedTaskFsWatchTopics: (...args) => admitSharedTaskFsWatchTopics(...args),
   transcribeRemoteVoiceInput: (...args) => transcribeRemoteVoiceInput(...args),
+  readMobileVoiceTranscribeHostChain: () => readMobileVoiceTranscribeHostChain(),
   readTelegramRemoteStatus: (...args) => readTelegramRemoteStatus(...args),
   setTelegramRemoteOnline: (...args) => setTelegramRemoteOnline(...args),
   adviseAndRecordVoiceInputDictionaryLearning: (...args) => adviseAndRecordVoiceInputDictionaryLearning(...args),

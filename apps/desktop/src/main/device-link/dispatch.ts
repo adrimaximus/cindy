@@ -163,7 +163,10 @@ import type { MAX_SHARED_TASK_TOPICS, refreshSharedTaskPeer, releaseSharedTaskWa
 import type { admitSharedTaskFsWatchTopics } from './sharedTaskFileAccess.js';
 import type { transcribeRemoteVoiceInput } from './voiceTranscribe';
 import type { readTelegramRemoteStatus, setTelegramRemoteOnline } from './telegramRemoteControl';
-import type { adviseAndRecordVoiceInputDictionaryLearning } from '../voice-input/index.js';
+import type {
+  adviseAndRecordVoiceInputDictionaryLearning,
+  readMobileVoiceTranscribeHostChain,
+} from '../voice-input/index.js';
 import type { buildMobileDictionarySnapshot } from '../voice-input/dictionarySyncDriver.js';
 import type {
   setBroadcastTapListener,
@@ -476,6 +479,7 @@ export interface InboundDispatchPorts {
   releaseSharedTaskWatchesOnWorkdirChange: typeof releaseSharedTaskWatchesOnWorkdirChange;
   admitSharedTaskFsWatchTopics: typeof admitSharedTaskFsWatchTopics;
   transcribeRemoteVoiceInput?: typeof transcribeRemoteVoiceInput;
+  readMobileVoiceTranscribeHostChain?: typeof readMobileVoiceTranscribeHostChain;
   readTelegramRemoteStatus?: typeof readTelegramRemoteStatus;
   setTelegramRemoteOnline?: typeof setTelegramRemoteOnline;
   adviseAndRecordVoiceInputDictionaryLearning?: typeof adviseAndRecordVoiceInputDictionaryLearning;
@@ -534,6 +538,7 @@ export function createInboundDispatch(ports: InboundDispatchPorts) {
     releaseSharedTaskWatchesOnWorkdirChange,
     admitSharedTaskFsWatchTopics,
     transcribeRemoteVoiceInput = unavailable('transcribeRemoteVoiceInput'),
+    readMobileVoiceTranscribeHostChain = unavailable('readMobileVoiceTranscribeHostChain'),
     readTelegramRemoteStatus = unavailable('readTelegramRemoteStatus'),
     setTelegramRemoteOnline = unavailable('setTelegramRemoteOnline'),
     adviseAndRecordVoiceInputDictionaryLearning = unavailable('adviseAndRecordVoiceInputDictionaryLearning'),
@@ -5266,7 +5271,16 @@ async function executeRemoteInvoke(src: string, payload: InvokePayload | undefin
   // 不参与合并,避免移动端维护一份会分叉的词典。
   if (payload.channel === DL_VOICE_DICTIONARY_GET_CHANNEL) {
     try {
-      return { ok: true, result: buildMobileDictionarySnapshot() };
+      // 能力投影与词典快照同帧下发(纯加法字段):旧手机忽略,新手机凭它把远程
+      // 听写切到被控端 BYOK 批量路径;读失败不影响词典本身。
+      const transcribeHostChain = readMobileVoiceTranscribeHostChain();
+      const snapshot = buildMobileDictionarySnapshot();
+      return {
+        ok: true,
+        result: snapshot.ok === true
+          ? { ...snapshot, ...(transcribeHostChain ? { transcribeHostChain } : {}) }
+          : snapshot,
+      };
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       log.warn(`voice:dictionary:get failed from ${shortId(src)}: ${message}`);

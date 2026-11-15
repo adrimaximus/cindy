@@ -165,6 +165,12 @@ export type MobileVoiceDictionarySnapshotResult =
       ok: true;
       entries: MobileVoiceCredentialSyncDictionaryEntry[];
       /**
+       * 被控端支持 BYOK 批量转写时携带(`device-link:voice:transcribe` 会跟随
+       * 被控端 customAsr.batchHttpUrl)。字段可缺省:旧被控端不认识它,手机端
+       * 视为「未支持」,远程听写继续走 Cindy 托管路径,不会误触网关计费。
+       */
+      transcribeHostChain?: { provider: 'custom-batch-asr'; model: string };
+      /**
        * 该桌面同步状态的版本向量:`{ nodeId: 该节点的最大 HLC }`。
        *
        * 手机同时拉多台电脑时用它判断哪一份**包含**了另一份。不能用响应到达时间

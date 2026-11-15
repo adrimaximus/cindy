@@ -187,6 +187,15 @@ export const VOICE_INPUT_ASR_PROFILES = {
     missingCredentialMessage: 'API key is required for LiteLLM voice input.',
     errorFallbackMessage: 'XD LiteLLM batch transcription failed.',
   },
+  'custom-batch-asr': {
+    id: 'custom-batch-asr',
+    model: CUSTOM_REALTIME_ASR_DISPLAY_MODEL,
+    auth: 'api-key',
+    settingsTab: 'providers',
+    mode: 'batch-http',
+    missingCredentialMessage: 'Configure the custom ASR batch HTTP URL on the realtime ASR form.',
+    errorFallbackMessage: 'Custom batch speech recognition failed.',
+  },
 } as const satisfies Record<string, VoiceInputAsrProfile>;
 
 export type VoiceInputProviderKind = keyof typeof VOICE_INPUT_ASR_PROFILES;
