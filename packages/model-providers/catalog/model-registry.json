@@ -1,6 +1,6 @@
 {
   "schemaVersion": 6,
-  "updatedAt": "2026-11-13T01:43:51.000Z",
+  "updatedAt": "2026-11-23T21:56:14.000Z",
   "models": [
     {
       "id": "openai/gpt-6.1-sol",
@@ -2035,6 +2035,27 @@
       ],
       "nativeApi": "openai-completions",
       "modelRef": "z-ai/glm-5.2"
+    },
+    {
+      "id": "z-ai/glm-5.4",
+      "name": "GLM-5.4",
+      "status": "active",
+      "sortOrder": 44,
+      "routes": [
+        {
+          "providerId": "xd",
+          "modelId": "z-ai/glm-5.4",
+          "agents": [
+            "claude-code",
+            "codex"
+          ],
+          "defaults": {
+            "supportsFastMode": false
+          }
+        }
+      ],
+      "nativeApi": "openai-completions",
+      "modelRef": "z-ai/glm-5.4"
     },
     {
       "id": "z-ai/glm-5.3",
@@ -7721,6 +7742,25 @@
           ]
         }
       ]
+    },
+    {
+      "id": "z-ai/glm-5.4",
+      "aliases": [
+        "glm-5.4"
+      ],
+      "defaults": {
+        "name": "GLM-5.4",
+        "description": "Zhipu GLM-5.4 vision-capable agentic coding model (Loop Transformer); 1M context",
+        "group": "china",
+        "contextWindow": 1000000,
+        "maxOutputTokens": 131072,
+        "efforts": [
+          "low",
+          "high",
+          "max"
+        ],
+        "defaultEffort": "high"
+      }
     },
     {
       "id": "z-ai/glm-5.3",

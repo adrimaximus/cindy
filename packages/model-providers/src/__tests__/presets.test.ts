@@ -1183,15 +1183,15 @@ describe('官方渠道预设契约', () => {
   });
 
   it.each(['zhipu-coding-plan-cn', 'zai-coding-plan-global'])(
-    '%s 只推荐官方支持的 GLM-5.3 / GLM-5.3-Flash（5.2、5.1 已路由到 5.3）',
+    '%s 只推荐官方支持的 GLM-5.4 / GLM-5.3 / GLM-5.3-Flash（5.2、5.1 已路由到 5.3）',
     (id) => {
       const recommended = (agent: 'claude-code' | 'codex' | 'pi') =>
         preset(id)?.runtimes[agent]?.models
           .filter((model) => model.defaultEnabled !== false)
           .map((model) => model.id);
-      expect(recommended('claude-code')).toEqual(['glm-5.3[1m]', 'glm-5.3-flash[1m]']);
-      expect(recommended('codex')).toEqual(['glm-5.3', 'glm-5.3-flash']);
-      expect(recommended('pi')).toEqual(['glm-5.3', 'glm-5.3-flash']);
+      expect(recommended('claude-code')).toEqual(['glm-5.4[1m]', 'glm-5.3[1m]', 'glm-5.3-flash[1m]']);
+      expect(recommended('codex')).toEqual(['glm-5.4', 'glm-5.3', 'glm-5.3-flash']);
+      expect(recommended('pi')).toEqual(['glm-5.4', 'glm-5.3', 'glm-5.3-flash']);
     },
   );
 
@@ -1199,6 +1199,13 @@ describe('官方渠道预设契约', () => {
     '%s 的 Claude Code 使用官方 [1m] 入口,与 Pi 的 glm-5.3 窗口一致 (#3883)',
     (id) => {
       const claudeModels = preset(id)?.runtimes['claude-code']?.models ?? [];
+      // GLM-5.4（2026-11-23 上线 Coding Plan）：Claude Code 走官方 glm-5.4[1m] 入口，带视觉输入。
+      expect(claudeModels.find((model) => model.id === 'glm-5.4[1m]')).toMatchObject({
+        id: 'glm-5.4[1m]',
+        name: 'GLM-5.4 (1M)',
+        contextWindow: 1_000_000,
+        supportsImageInput: true,
+      });
       expect(claudeModels.find((model) => model.id === 'glm-5.3[1m]')).toMatchObject({
         id: 'glm-5.3[1m]',
         name: 'GLM-5.3 (1M)',
@@ -1212,6 +1219,13 @@ describe('官方渠道预设契约', () => {
       expect(
         preset(id)?.runtimes.pi?.models.find((model) => model.id === 'glm-5.3')?.contextWindow,
       ).toBe(1_000_000);
+      const glm54 = preset(id)?.runtimes.pi?.models.find((model) => model.id === 'glm-5.4');
+      expect(glm54).toMatchObject({ contextWindow: 1_000_000, supportsImageInput: true });
+      expect(glm54).not.toHaveProperty('engines');
+      // Codex 走 openai-chat 桥接，未验证图片格式 → 不声明图片输入（与 5.3-Flash 同口径）。
+      expect(
+        preset(id)?.runtimes.codex?.models.find((model) => model.id === 'glm-5.4'),
+      ).toMatchObject({ contextWindow: 1_000_000, supportsImageInput: false });
     },
   );
 
